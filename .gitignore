@@ -2,8 +2,12 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+Sources/Data/Day*.txt
+.venv
+
 ## User settings
 xcuserdata/
+.idea
 
 ## Obj-C/Swift specific
 *.hmap
