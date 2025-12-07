@@ -2,65 +2,78 @@ import Foundation
 
 struct Day02: AdventDay {
     var data: String
-    
+
     var entities: [[Int]] {
-        Array(data).filter({ $0 != "\n" }).split(separator: ",").map {
-            $0.split(separator: "-").compactMap { Int(String($0)) }
-        }
+        data
+            .split(whereSeparator: \.isNewline)
+            .flatMap { $0.split(separator: ",") }
+            .map { $0.split(separator: "-").compactMap { Int($0) } }
     }
-    
+
     func part1() -> Any {
-        var res = 0
-        for r in entities {
-            for i in r[0]...r[1] where isRepeated(i, part1: true) {
-                res += i
-            }
-        }
-        return res
+        entities.reduce(0) { $0 + solve(for: $1, part1: true) }
     }
 
     func part2() -> Any {
-        var res = 0
-        for r in entities {
-            for i in r[0]...r[1] where isRepeated(i) {
-                res += i
+        entities.reduce(0) { $0 + solve(for: $1, part1: false) }
+    }
+
+    private func solve(for range: [Int], part1: Bool) -> Int {
+        let lo = range[0]
+        let hi = range[1]
+
+        let minLen = digitsCount(lo)
+        let maxLen = digitsCount(hi)
+
+        var result = 0
+        var seen = Set<Int>()
+
+        for len in minLen...maxLen where (len > 1) && (!part1 || len % 2 == 0) {
+            let possibleRange = max(lo, pow10(len - 1))...min(hi, pow10(len) - 1)
+            let blockRange: ClosedRange<Int> = (part1 ? (len / 2) : 1)...(len / 2)
+
+            for block in blockRange where len % block == 0 {
+                let repeats = len / block
+
+                let lowBase = pow10(block - 1)
+                let highBase = pow10(block) - 1
+
+                for base in lowBase...highBase {
+                    let num = buildRepeated(base, times: repeats, block: block)
+                    if possibleRange ~= num, !seen.contains(num) {
+                        seen.insert(num)
+                        result += num
+                    }
+                }
             }
         }
-        return res
+
+        return result
     }
 
-    private func isRepeated(_ n: Int, part1: Bool = false) -> Bool {
-        let digits = digits(n)
-        let l = digits.count
-        guard l > 1 && (!part1 || l % 2 == 0) else {
-            return false
+    private func buildRepeated(_ base: Int, times: Int, block: Int) -> Int {
+        var r = 0
+        let shift = pow10(block)
+        for _ in 0..<times {
+            r = r * shift + base
         }
-        let range = (part1 ? l/2 : 1)...(l/2)
-
-        for len in range where l % len == 0 && check(slice: digits[0..<len], digits: digits) {
-            return true
-        }
-        return false
+        return r
     }
 
-    private func check(slice: ArraySlice<Int>, digits: [Int]) -> Bool {
-        let count = slice.count
-        let loops = digits.count / count
-        for i in 0..<loops {
-            for j in 0..<count where digits[count * i + j] != slice[j] {
-                return false
-            }
-        }
-        return true
+    private func pow10(_ n: Int) -> Int {
+        (0..<n).reduce(1) { val, _ in val * 10 }
     }
 
-    private func digits(_ n: Int) -> [Int] {
-        var n = n
-        var res = [Int](repeating: 0, count: Int(log10(Double(n))) + 1)
-        for i in (0..<res.count).reversed() {
-            res[i] = n % 10
-            n /= 10
-        }
-        return res
+    private func digitsCount(_ n: Int) -> Int {
+        if n < 10 { return 1 }
+        if n < 100 { return 2 }
+        if n < 1_000 { return 3 }
+        if n < 10_000 { return 4 }
+        if n < 100_000 { return 5 }
+        if n < 1_000_000 { return 6 }
+        if n < 10_000_000 { return 7 }
+        if n < 100_000_000 { return 8 }
+        if n < 1_000_000_000 { return 9 }
+        return Int(log10(Double(n))) + 1
     }
 }
