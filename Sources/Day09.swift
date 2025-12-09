@@ -22,17 +22,43 @@ struct Day09: AdventDay {
         }
         return res
     }
-    
+
+    private func reducedRed() -> (red: [[Int]], xMap: [Int], yMap: [Int]) {
+        let input = entities
+        let xset = Set(input.map { $0[0] }).sorted()
+        let yset = Set(input.map { $0[1] }).sorted()
+
+        var xMap = [Int](repeating: 0, count: xset.count + 1)
+        var yMap = [Int](repeating: 0, count: yset.count + 1)
+        var rxMap = [Int: Int]()
+        var ryMap = [Int: Int]()
+
+        for (i, x) in xset.enumerated() {
+            xMap[i + 1] = x
+            rxMap[x] = i + 1
+        }
+
+        for (i, y) in yset.enumerated() {
+            yMap[i + 1] = y
+            ryMap[y] = i + 1
+        }
+
+        return (
+            input.map({ [rxMap[$0[0]]!, ryMap[$0[1]]!] }),
+            xMap, yMap
+        )
+    }
+
     func part2() -> Any {
-        let red = entities
+        let (red, xMap, yMap) = reducedRed()
 
         let (horizontalRanges, verticalRanges) = {
             var horizontalRanges: [Int: [(i: Int, r: ClosedRange<Int>)]] = [:]
             var verticalRanges: [Int: [(i: Int, r: ClosedRange<Int>)]] = [:]
 
-            for i in 0..<entities.count {
-                let current = entities[i]
-                let next = entities[(i + 1) % entities.count]
+            for i in 0..<red.count {
+                let current = red[i]
+                let next = red[(i + 1) % red.count]
 
                 let x1 = current[0], y1 = current[1]
                 let x2 = next[0], y2 = next[1]
@@ -59,25 +85,8 @@ struct Day09: AdventDay {
                 return true
             }
 
-            let possibleVerticalIndices = Set(verticalRanges.compactMap({ $0.value.contains(where: { $0.r.contains(point[0]) }) ? $0.key : nil })).sorted()
-            let possibleRange = 0..<possibleVerticalIndices.count
             let followingRayRanges = horizontalRanges[point[0], default: []]
             var cur = point[1]
-
-            var pvj: Int = 0
-            if !possibleVerticalIndices.isEmpty {
-                var left = 0
-                var right = possibleVerticalIndices.count - 1
-                while left < right {
-                    let mid = (left + right) / 2
-                    if possibleVerticalIndices[mid] >= cur {
-                        right = mid - 1
-                    } else {
-                        left = mid
-                    }
-                }
-                pvj = left
-            }
 
             var intersectionCount = 0
             while cur > 0 {
@@ -99,10 +108,6 @@ struct Day09: AdventDay {
                     intersectionCount += 1
                 }
                 cur -= 1
-                while possibleRange ~= pvj, possibleVerticalIndices[pvj] > cur {
-                    pvj += 1
-                }
-                cur = possibleRange ~= pvj ? possibleVerticalIndices[pvj] : 0
             }
             mem[point] = intersectionCount % 2 == 1
             return intersectionCount % 2 == 1
@@ -110,7 +115,6 @@ struct Day09: AdventDay {
 
         var res = 0
         for i in 0..<red.count {
-            print(100*i/red.count)
             for j in (i + 1)..<red.count {
                 let x1 = red[i][0], y1 = red[i][1]
                 let x2 = red[j][0], y2 = red[j][1]
@@ -130,7 +134,7 @@ struct Day09: AdventDay {
                     }
                 }
                 if good {
-                    res = max(res, (abs(x1 - x2) + 1) * (abs(y1 - y2) + 1))
+                    res = max(res, (abs(xMap[x1] - xMap[x2]) + 1) * (abs(yMap[y1] - yMap[y2]) + 1))
                 }
             }
         }
