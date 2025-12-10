@@ -1,23 +1,6 @@
 import Foundation
 
 struct Day10: AdventDay {
-    private struct Node: Comparable {
-        let state: [Int]
-        let g: Int
-        let h: Int
-        var f: Int {
-            g + h
-        }
-
-        static func < (lhs: Node, rhs: Node) -> Bool {
-            lhs.f < rhs.f
-        }
-
-        static func == (lhs: Node, rhs: Node) -> Bool {
-            lhs.f == rhs.f && lhs.state == rhs.state
-        }
-    }
-
     var data: String
 
     func part1() -> Any {
@@ -55,17 +38,65 @@ struct Day10: AdventDay {
     func part2() -> Any {
         let lines = data.split(whereSeparator: \.isNewline)
         var total = 0
-        for (i, line) in lines.enumerated() {
-            print(i * 100 / lines.count)
+        for line in lines {
             let (_, buttons, joltage) = parseLine(Array(line), masks: false)
-            total += aStar(buttons: buttons, joltage: joltage)
+            total += gauss(buttons: buttons, joltage: joltage)
         }
-
         return total
     }
 
-    private func aStar(buttons: [[Int]], joltage: [Int]) -> Int {
-        0
+    private func gauss(buttons: [[Int]], joltage: [Int]) -> Int {
+        let n = joltage.count
+        let m = buttons.count
+        
+        var matrix = Array(repeating: Array(repeating: 0.0, count: m + 1), count: n)
+        
+        for i in 0..<n {
+            for j in 0..<m {
+                if buttons[j].contains(i) {
+                    matrix[i][j] = 1.0
+                }
+            }
+            matrix[i][m] = Double(joltage[i])
+        }
+        
+        var currentRow = 0
+        for col in 0..<m {
+            guard let pivotRow = (currentRow..<n).first(where: { matrix[$0][col] != 0 }) else {
+                continue
+            }
+            
+            if pivotRow != currentRow {
+                matrix.swapAt(currentRow, pivotRow)
+            }
+
+            for row in (currentRow + 1)..<n {
+                if matrix[row][col] != 0 {
+                    let factor = matrix[row][col] / matrix[currentRow][col]
+                    for j in col...(m) {
+                        matrix[row][j] -= factor * matrix[currentRow][j]
+                    }
+                }
+            }
+            
+            currentRow += 1
+        }
+        
+        var solution = Array(repeating: 0.0, count: m)
+        
+        for i in stride(from: min(currentRow, n) - 1, through: 0, by: -1) {
+            guard let leadCol = (0..<m).first(where: { matrix[i][$0] != 0 }) else {
+                continue
+            }
+            
+            var sum = matrix[i][m]
+            for j in (leadCol + 1)..<m {
+                sum -= matrix[i][j] * solution[j]
+            }
+            solution[leadCol] = sum / matrix[i][leadCol]
+        }
+        
+        return Int(solution.reduce(0, +))
     }
 
     private func parseLine(_ line: [Character], masks: Bool) -> (Int, [[Int]], [Int]) {
