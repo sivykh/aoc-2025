@@ -40,9 +40,17 @@ struct Day10: AdventDay {
         var total = 0
         for line in lines {
             let (_, buttons, joltage) = parseLine(Array(line), masks: false)
-            total += gauss(buttons: buttons, joltage: joltage)
+            var solution = gauss(buttons: buttons, joltage: joltage)
+            if solution == -1 {
+                solution = anotherSolver(buttons: buttons, joltage: joltage)
+            }
+            total += solution
         }
         return total
+    }
+    
+    private func anotherSolver(buttons: [[Int]], joltage: [Int]) -> Int {
+        0
     }
 
     private func gauss(buttons: [[Int]], joltage: [Int]) -> Int {
@@ -96,7 +104,10 @@ struct Day10: AdventDay {
             solution[leadCol] = sum / matrix[i][leadCol]
         }
         
-        return Int(solution.reduce(0, +))
+        if solution.contains(where: { floor($0) != ceil($0) || $0 < 0 }) {
+            return -1
+        }
+        return Int(solution.reduce(0) { $0 + Int($1) })
     }
 
     private func parseLine(_ line: [Character], masks: Bool) -> (Int, [[Int]], [Int]) {
